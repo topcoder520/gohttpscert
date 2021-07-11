@@ -1,5 +1,5 @@
 # gohttpscert
-#https双向验证 自签名证书生成
+# https双向验证 自签名证书生成
 首先需要下载 OpenSSL [http://slproweb.com/products/Win32OpenSSL.html](http://slproweb.com/products/Win32OpenSSL.html) 
 ## 第一种方法：GO1.15版本以下证书生成
 **go 1.15 版本开始废弃 CommonName**   
@@ -20,7 +20,7 @@
 
 	"//CN=localhost"
 
-###2、接下来，生成server端的私钥，生成数字证书请求，并用我们的ca私钥签发server的数字证书
+### 2、接下来，生成server端的私钥，生成数字证书请求，并用我们的ca私钥签发server的数字证书
 
 	openssl genrsa -out server.key 2048
 	openssl req -new -key server.key -subj "/CN=localhost" -out server.csr
@@ -36,7 +36,7 @@ Server:
     私钥文件 server.key
     数字证书 server.crt
 
-###3、生成客户端的私钥与证书
+### 3、生成客户端的私钥与证书
 
 	openssl genrsa -out client.key 2048
 	openssl req -new -key client.key -subj "/CN=localhost" -out client.csr
@@ -55,7 +55,7 @@ extendedKeyUsage=clientAuth
 因为 go 1.15 版本开始废弃 CommonName，因此推荐使用 SAN 证书。    
 下面就介绍一下SAN证书生成    
 
-###第1步：生成 CA 根证书
+### 第1步：生成 CA 根证书
 
 	openssl genrsa -out ca.key 2048
 	openssl req -new -x509 -days 3650 -key ca.key -out ca.pem    
@@ -109,7 +109,7 @@ Windows：安装目录下 openssl.cfg 比如 D:\Program Files\OpenSSL-Win64\bin\
 
 server.csr是上面生成的证书请求文件。ca.pem/ca.key是CA证书文件和key，用来对server.csr进行签名认证。这两个文件在之前生成的。
 
-###第4步：生成客户端证书
+### 第4步：生成客户端证书
 
 	
 	openssl genpkey -algorithm RSA -out client.key
@@ -121,7 +121,7 @@ server.csr是上面生成的证书请求文件。ca.pem/ca.key是CA证书文件�
 现在 Go 1.15 以上版本的 GRPC 通信，这样就完成了使用自签CA、Server、Client证书和双向认证
 
 
-###最后
+### 最后
 
 如果出现创建Server证书请求出现错误：
 
@@ -133,14 +133,67 @@ server.csr是上面生成的证书请求文件。ca.pem/ca.key是CA证书文件�
  
 **解决办法：关闭PowerShell 重新进入OpenSSL问题解决。**
 
+## chrome浏览器导入验证证书
 
+证书分为CA权威机构认证和自签的证书。区别在于根证书的认证中心权威性不一致，CA证书的认证中心默认的已被浏览器等内置和可信，而自签的根证书认证中心需要我们自己导入可信任的颁发机构中。如果没有导入则浏览器在访问时将提示不证书机构不被信任信息存在被篡改的风险等提示。
+自签证书三部曲：
+1.生成根证书密钥+根证书
+2.生成客户端密钥，客户端请求
+3.生成用根证书签发的客户端证书
+
+### 1.生成自签根证书
+
+	openssl genrsa -out ca.key 2048
+	openssl req -x509 -new -key ca.key -out ca.pem -days 3650
+
+### 2.生成客户端密钥和请求
+
+	openssl genrsa -out client.key 2048
+	openssl req -new -key client.key -out client.csr
+
+###3.签发证书
+
+新建http.ext 内容如下（修改对应的域名或IP为自己的）
+授权为域名时：
+
+	keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+	extendedKeyUsage = serverAuth, clientAuth
+	subjectAltName=@SubjectAlternativeName
+	[ SubjectAlternativeName ]
+	DNS.1=test.com
+	DNS.2=www.test.com
+
+授权为IP时：
+
+	keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+	extendedKeyUsage = serverAuth, clientAuth
+	subjectAltName=@SubjectAlternativeName
+	[ SubjectAlternativeName ]
+	IP.1=192.168.1.1
+	IP.2=192.168.1.2
+
+签发证书指令如下:
+
+	openssl x509 -req -in http.csr -CA ca.pem -CAkey ca.key -CAcreateserial -out http.crt -days 3650 -sha256 -extfile http.ext
+
+### 4.导入根证书，客户端证书到浏览器可信任的颁发机构 （注意转换为浏览器支持的证书格式，这里以P12为例进行转换）
+
+	openssl pkcs12 -export -in ca.pem -inkey ca.key -out ca.p12
+	openssl pkcs12 -export -clcerts -in http.crt -inkey client.key -out http.p12
+
+###最后把生成的ca.p12和http.p12导入谷歌浏览器
+
+步骤：设置 -> 隐私设置和安全性 -> 安全 -> 管理证书
+
+以上步骤之后会出现一个弹框，可以在这个弹窗上导入证书了
 
 
 文章参考：
 
 
 [https://blog.csdn.net/ma_jiang/article/details/111950872](https://blog.csdn.net/ma_jiang/article/details/111950872)   
-[https://studygolang.com/articles/9267](https://studygolang.com/articles/9267)
+[https://studygolang.com/articles/9267](https://studygolang.com/articles/9267)     
+[https://www.jianshu.com/p/71851020d372](https://www.jianshu.com/p/71851020d372)
 
 
 
