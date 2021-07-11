@@ -151,7 +151,7 @@ server.csr是上面生成的证书请求文件。ca.pem/ca.key是CA证书文件�
 	openssl genrsa -out client.key 2048
 	openssl req -new -key client.key -out client.csr
 
-###3.签发证书
+### 3.签发证书
 
 新建http.ext 内容如下（修改对应的域名或IP为自己的）
 授权为域名时：
@@ -181,7 +181,7 @@ server.csr是上面生成的证书请求文件。ca.pem/ca.key是CA证书文件�
 	openssl pkcs12 -export -in ca.pem -inkey ca.key -out ca.p12
 	openssl pkcs12 -export -clcerts -in http.crt -inkey client.key -out http.p12
 
-###最后把生成的ca.p12和http.p12导入谷歌浏览器
+### 最后把生成的ca.p12和http.p12导入谷歌浏览器
 
 步骤：设置 -> 隐私设置和安全性 -> 安全 -> 管理证书
 
