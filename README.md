@@ -174,7 +174,7 @@ server.csr是上面生成的证书请求文件。ca.pem/ca.key是CA证书文件�
 
 签发证书指令如下:
 
-	openssl x509 -req -in http.csr -CA ca.pem -CAkey ca.key -CAcreateserial -out http.crt -days 3650 -sha256 -extfile http.ext
+	openssl x509 -req -in client.csr -CA ca.pem -CAkey ca.key -CAcreateserial -out http.crt -days 3650 -sha256 -extfile http.ext
 
 ### 4.导入根证书，客户端证书到浏览器可信任的颁发机构 （注意转换为浏览器支持的证书格式，这里以P12为例进行转换）
 
